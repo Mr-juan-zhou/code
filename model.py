@@ -8,20 +8,19 @@ from torch.optim.lr_scheduler import StepLR
 import torch.utils.data as Data
 import pandas as pd
 import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
+
 
 
 seed = 666
 batch_size = 16
 lr = 0.0001
-num_epochs = 300
+num_epochs = 240
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 
 #Network Structure
-
-class Residual(nn.Module):  #@save
+class Residual(nn.Module):
     def __init__(self, input_channels, num_channels,
                  use_1x1conv=False, strides=1):
         super().__init__()
@@ -56,7 +55,7 @@ def resnet_block(input_channels, num_channels, num_residuals, first_block=False)
             blk.append(Residual(num_channels, num_channels))
     return blk
 
-b1 = nn.Sequential(nn.Conv1d(in_channels=1, out_channels=10, kernel_size=7, stride=1, padding=1),
+b1 = nn.Sequential(nn.Conv1d(in_channels=1, out_channels=10, kernel_size=32, stride=1, padding=1),
                            nn.BatchNorm1d(10),
                            nn.ReLU(),
                            nn.MaxPool1d(kernel_size=3, stride=2, padding=1),
@@ -152,7 +151,7 @@ test_acc_list = []
 for epoch in range(num_epochs):
     running_loss_train = 0
     running_loss_test = 0
-    print("------第 {} 轮训练开始------".format(epoch + 1))
+    print("------Start of training epoch {}------".format(epoch + 1))
 
 
     # testing start
@@ -179,22 +178,22 @@ for epoch in range(num_epochs):
         total_train_step = total_train_step + 1
 
         if total_train_step % 100 == 0:
-            print("训练次数: {}, 训练集上的Loss: {:.4f}".format(total_train_step, loss.item()))
+            print("train_num: {}, train_Loss: {:.4f}".format(total_train_step, loss.item()))
 
         correct_train += (outputs.argmax(1) == labels).sum()
         total_train += labels.size(0)
         count_train += 1
-    print("训练集在{}个batch中的Acc为：{:.6f}%".format(count_train, 100 * correct_train / total_train))
+    print("train_Acc：{:.6f}%".format(count_train, 100 * correct_train / total_train))
     train_acc_list.append(correct_train / total_train)
     end_time = time.time()
-    print("训练时间: {:.2f}秒".format(end_time - strat_time))
+    print("train_time: {:.2f}".format(end_time - strat_time))
     train_loss_list.append(running_loss_train)
     #scheduler.step()
 
     net.eval()
-    total_test = 0  # 测试集总共的样本个数
-    count_test = 0  # 共进行了count个batch = total/batch_size
-    correct_test = 0  # 测试机中测试正确的个数
+    total_test = 0
+    count_test = 0
+    correct_test = 0
 
     total_test_loss = 0
     total_test_accuracy = 0
@@ -210,10 +209,10 @@ for epoch in range(num_epochs):
             loss_test = criterion(outputs, labels)
             running_loss_test += loss_test.item()
             correct_test += (outputs.argmax(1) == labels).sum()
-            total_test += labels.size(0)  # 计算测试集中总样本个数
-            count_test += 1  # 记录测试集共分成了多少个batch
-        print("测试集在{}个batch中的Acc为：{:.6f}%".format(count_test, 100 * correct_test / total_test))
-        print("测试集上的Loss: {:.4f}".format(loss_test.item()))
+            total_test += labels.size(0)
+            count_test += 1
+        print("test_Acc：{:.6f}%".format(count_test, 100 * correct_test / total_test))
+        print("test_Loss: {:.4f}".format(loss_test.item()))
         test_acc_list.append(correct_test / total_test)
         test_loss_list.append(running_loss_test)
 
@@ -221,14 +220,14 @@ for epoch in range(num_epochs):
 #acc
 plt.figure(figsize=(12, 12), dpi=100)
 plt.subplot(2, 2, 1)
-test_acc_lines = plt.plot(test_acc_list, 'r', lw=1, label='acc')  # lw为曲线宽度
+test_acc_lines = plt.plot(test_acc_list, 'r', lw=1, label='acc')
 plt.title("test_acc")
 plt.xlabel("epoch")
 plt.ylabel("acc")
 plt.legend(["The Accuracy of Test"])
 
 plt.subplot(2, 2, 2)
-test_acc_lines = plt.plot(train_acc_list, 'g', lw=1, label='acc')  # lw为曲线宽度
+test_acc_lines = plt.plot(train_acc_list, 'g', lw=1, label='acc')
 plt.title("train_acc")
 plt.xlabel("epoch")
 plt.ylabel("acc")
@@ -237,14 +236,14 @@ plt.legend(["The Accuracy of Train"])
 
 #loss
 plt.subplot(2, 2, 3)
-test_loss_lines = plt.plot(train_loss_list, 'b', lw=1, label='loss')  # lw为曲线宽度
+test_loss_lines = plt.plot(train_loss_list, 'b', lw=1, label='loss')
 plt.title("train_loss")
 plt.xlabel("epoch")
 plt.ylabel("loss")
 plt.legend(["The Loss of Train"])
 
 plt.subplot(2, 2, 4)
-test_loss_lines = plt.plot(test_loss_list, 'y', lw=1, label='loss')  # lw为曲线宽度
+test_loss_lines = plt.plot(test_loss_list, 'y', lw=1, label='loss')
 plt.title("test_loss")
 plt.xlabel("epoch")
 plt.ylabel("loss")
