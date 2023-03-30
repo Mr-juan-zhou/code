@@ -13,7 +13,7 @@ import numpy as np
 
 seed = 666
 batch_size = 16
-lr = 0.0001
+lr = 1e-3
 num_epochs = 240
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
